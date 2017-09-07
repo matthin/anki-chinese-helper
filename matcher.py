@@ -2,7 +2,7 @@ from anki.hooks import addHook
 from aqt import mw
 import os, sqlite3
 
-conn = sqlite3.connect(os.path.join(mw.pm.addonFolder(), "cedict.db"))
+conn = sqlite3.connect(os.path.join(os.path.dirname(os.path.realpath(__file__)), "cedict.db"))
 
 # Can't use tab or select another field. You must click outside of a field for this hook to work.
 def on_focus_lost(flag, n, fidx):
