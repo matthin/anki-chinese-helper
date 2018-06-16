@@ -1,43 +1,53 @@
+import os
+import sqlite3
 from anki.hooks import addHook
-from aqt import mw
-import os, sqlite3
 
-conn = sqlite3.connect(os.path.join(os.path.dirname(os.path.realpath(__file__)), "cedict.db"))
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+CONN = sqlite3.connect(os.path.join(CURR_DIR, "cedict.db"))
 
-def multiple_hanzi(conn, n, flag):
-    for char in n["Hanzi"]:
-        c = conn.cursor()
 
-        t = (char,)
-        c.execute("SELECT * FROM entries WHERE simplified = ? LIMIT 1", t)
-        entry = c.fetchone()
+def multiple_hanzi(note, flag):
+    """ Helper function for the main matcher when multiple hanzi are used """
+
+    for char in note["Hanzi"]:
+        cursor = CONN.cursor()
+
+        # should probably be batched, but doesn't really matter
+        cursor.execute("SELECT * FROM entries WHERE simplified = ? LIMIT 1",
+                       (char,))
+        entry = cursor.fetchone()
         if entry is None:
             return flag
-        n["Pinyin"] += entry[2] + " "
+        note["Pinyin"] += entry[2] + " "
 
-        c.close()
-    n["Pinyin"] = n["Pinyin"].rstrip()
+        cursor.close()
+    note["Pinyin"] = note["Pinyin"].rstrip()
 
     return True
 
-# Can't use tab or select another field. You must click outside of a field for this hook to work.
-def on_focus_lost(flag, n, fidx):
-    if "Chinese" not in n.model()['name']:
+
+def on_focus_lost(flag, note, _fidx):
+    """ Takes filled in hanzi field and matches empty fields with their
+        respective information """
+
+    if "Chinese" not in note.model()['name']:
         return flag
-    if n["Hanzi"] is "" or n["Pinyin"] is not "" or n["Meaning"] is not "":
+    if not note["Hanzi"] or note["Pinyin"] or note["Meaning"]:
         return flag
 
-    c = conn.cursor()
-    t = (n["Hanzi"],)
-    c.execute("SELECT * FROM entries WHERE simplified = ? LIMIT 1", t)
-    entry = c.fetchone()
+    cursor = CONN.cursor()
+    cursor.execute("SELECT * FROM entries WHERE simplified = ? LIMIT 1",
+                   (note["Hanzi"],))
+    entry = cursor.fetchone()
     if entry is None:
-        return multiple_hanzi(conn, n, flag)
+        cursor.close()
+        return multiple_hanzi(note, flag)
 
-    n["Pinyin"] = entry[2]
-    n["Meaning"] = entry[3].replace("/", "<br>")
-    c.close()
+    note["Pinyin"] = entry[2]
+    note["Meaning"] = entry[3].replace("/", "<br>")
+    cursor.close()
 
     return True
+
 
 addHook('editFocusLost', on_focus_lost)

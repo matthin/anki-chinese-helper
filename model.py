@@ -1,34 +1,33 @@
 import anki.stdmodels
 
+
 def add_chinese_model(col):
-    mm = col.models
-    m = mm.new("Chinese (alt)")
+    """ Creates a general chinese model used for notes """
 
-    fm = mm.newField("Hanzi")
-    mm.addField(m, fm)
+    models = col.models
+    model = models.new("Chinese (alt)")
 
-    fm = mm.newField("Meaning")
-    mm.addField(m, fm)
+    models.addField(model, models.newField("Hanzi"))
+    models.addField(model, models.newField("Meaning"))
+    models.addField(model, models.newField("Pinyin"))
 
-    fm = mm.newField("Pinyin")
-    mm.addField(m, fm)
-
-    t = mm.newTemplate("Recognition")
-    t["qfmt"] = "<div>{{ Hanzi }}</div>"
-    t["afmt"] = """
+    template = models.newTemplate("Recognition")
+    template["qfmt"] = "<div>{{ Hanzi }}</div>"
+    template["afmt"] = """
     <div class="meaning">{{ Meaning }}</div>
     <div>{{ Pinyin }}</div>
     <div>{{ Hanzi }}</div>
     """
-    mm.addTemplate(m, t)
+    models.addTemplate(model, template)
 
-    m["css"] += """
+    model["css"] += """
     .meaning {
         margin-bottom: 2em;
     }
     """
 
-    mm.add(m)
-    return m
+    models.add(model)
+    return model
+
 
 anki.stdmodels.models.append(("Chinese (alt)", add_chinese_model))
